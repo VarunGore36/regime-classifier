@@ -14,7 +14,7 @@ This document uses Mermaid diagrams (rendered natively on GitHub) to visualize t
 flowchart LR
     subgraph "Accuracy: Predicting High Volatility (Next 10 Days)"
         direction TB
-        A1[VIX > Median: 74.4% ✓]
+        A1[VIX > Median: 74.4%]
         A2[Realized Vol > Median: 67.7%]
         A3[Classifier STRESS/CRISIS: 63.0%]
         A4[Classifier TRANS/STRESS/CRISIS: 60.4%]
@@ -49,11 +49,11 @@ flowchart TD
     B --> D[Classifier STRESS/CRISIS only]
     B --> E[VIX > Median]
     B --> F[Realized Vol > Median]
-    C --> G[Acc: 60.4%<br/>Prec: 59.0%<br/>Rec: 68.0%]
-    D --> H[Acc: 63.0%<br/>Prec: 70.1%<br/>Rec: 45.1%]
-    E --> I[Acc: 74.4% ✓<br/>Prec: 74.4%<br/>Rec: 74.4%]
-    F --> J[Acc: 67.7%<br/>Prec: 67.7%<br/>Rec: 67.7%]
-    G --> K[Beats coin flip ✓<br/>Loses to VIX ✗]
+    C --> G[Acc: 60.4%\nPrec: 59.0%\nRec: 68.0%]
+    D --> H[Acc: 63.0%\nPrec: 70.1%\nRec: 45.1%]
+    E --> I[Acc: 74.4%\nPrec: 74.4%\nRec: 74.4%]
+    F --> J[Acc: 67.7%\nPrec: 67.7%\nRec: 67.7%]
+    G --> K[Beats coin flip\nLoses to VIX]
     H --> K
     I --> K
     J --> K
@@ -83,10 +83,10 @@ flowchart LR
 flowchart LR
     subgraph "Precision / Recall Trade-off"
         direction TB
-        P1[VIX Median: Prec 43.3% | Rec 86.6%]
-        P2[Realized Vol: Prec 39.9% | Rec 79.7%]
-        P3[STRESS/CRISIS: Prec 44.9% | Rec 57.8%]
-        P4[TRANS/STRESS/CRISIS: Prec 34.0% | Rec 78.3%]
+        P1[VIX Median: Prec 43.3% / Rec 86.6%]
+        P2[Realized Vol: Prec 39.9% / Rec 79.7%]
+        P3[STRESS/CRISIS: Prec 44.9% / Rec 57.8%]
+        P4[TRANS/STRESS/CRISIS: Prec 34.0% / Rec 78.3%]
     end
 ```
 
@@ -95,12 +95,12 @@ flowchart LR
 ```mermaid
 flowchart LR
     subgraph "High Recall / Low Precision"
-        R1[TRANS/STRESS/CRISIS<br/>Recall: 78.3%<br/>Precision: 34.0%<br/>Flags: 57.6%]
-        R2[VIX > Median<br/>Recall: 86.6%<br/>Precision: 43.3%<br/>Flags: 50%]
+        R1[TRANS/STRESS/CRISIS\nRecall: 78.3%\nPrecision: 34.0%\nFlags: 57.6%]
+        R2[VIX > Median\nRecall: 86.6%\nPrecision: 43.3%\nFlags: 50%]
     end
     subgraph "Balanced"
-        B1[STRESS/CRISIS only<br/>Recall: 57.8%<br/>Precision: 44.9%<br/>Flags: 32.2%]
-        B2[Realized Vol Median<br/>Recall: 79.7%<br/>Precision: 39.9%<br/>Flags: 50%]
+        B1[STRESS/CRISIS only\nRecall: 57.8%\nPrecision: 44.9%\nFlags: 32.2%]
+        B2[Realized Vol Median\nRecall: 79.7%\nPrecision: 39.9%\nFlags: 50%]
     end
 ```
 
@@ -114,10 +114,10 @@ flowchart LR
 flowchart LR
     subgraph "AUC: Ranking Power for Volatility Targets"
         direction TB
-        S1[VIX Alone: 0.828 / 0.850 ✓]
-        S2[Realized Vol 20d: 0.753 / 0.789 ✓]
-        S3[Risk Score: 0.749 / 0.783 ~]
-        S4[Entropy Ratio ρ: 0.620 / 0.639 ✗]
+        S1[VIX Alone: 0.828 / 0.850]
+        S2[Realized Vol 20d: 0.753 / 0.789]
+        S3[Risk Score: 0.749 / 0.783]
+        S4[Entropy Ratio: 0.620 / 0.639]
     end
 ```
 
@@ -149,11 +149,11 @@ flowchart LR
 ```mermaid
 flowchart TD
     A[Signal Quality Assessment] --> B{AUC > 0.8?}
-    B -->|Yes| C[VIX Alone: 0.828 / 0.850 ✓]
+    B -->|Yes| C[VIX Alone: 0.828 / 0.850]
     B -->|No| D{0.7 - 0.8?}
-    D -->|Yes| E[Realized Vol: 0.753 / 0.789 ✓]
-    D -->|Yes| F[Risk Score: 0.749 / 0.783 ~]
-    D -->|No| G[Entropy Ratio: 0.620 / 0.639 ✗]
+    D -->|Yes| E[Realized Vol: 0.753 / 0.789]
+    D -->|Yes| F[Risk Score: 0.749 / 0.783]
+    D -->|No| G[Entropy Ratio: 0.620 / 0.639]
     C --> H[Best standalone predictor]
     E --> I[Strong baseline]
     F --> J[No better than realized vol]
@@ -185,7 +185,7 @@ flowchart TD
     B -->|No: 4,272 days| D[Normal days]
     C --> E[STRESS or CRISIS: 57% caught]
     C --> F[Not flagged: 19%]
-    E --> G[Classifier flags 58% of ALL days as<br/>TRANSITION or worse → High false positive rate]
+    E --> G[Classifier flags 58% of ALL days as\nTRANSITION or worse -> High false positive rate]
 ```
 
 ---
@@ -198,11 +198,11 @@ flowchart TD
 flowchart LR
     subgraph "Directional Prediction Accuracy"
         direction TB
-        D1[Market always UP (baseline): 64.8%]
-        D2[CALM_BULL predicts UP: 63.3%]
-        D3[PCA Structure Score: 52.8%]
-        D4[Coin Flip: 50.0%]
-        D5[CALM_BEAR predicts DOWN: 45.1%]
+        D1[Market always UP (baseline) - 64.8%]
+        D2[CALM_BULL predicts UP - 63.3%]
+        D3[PCA Structure Score - 52.8%]
+        D4[Coin Flip - 50.0%]
+        D5[CALM_BEAR predicts DOWN - 45.1%]
     end
 ```
 
@@ -214,9 +214,9 @@ flowchart LR
         MB[Market UP 64.8% of time]
     end
     subgraph "Classifier Signals"
-        S1[CALM_BULL → UP: 63.3% ✗<br/>Worse than baseline]
-        S2[CALM_BEAR → DOWN: 45.1% ✗<br/>Worse than coin flip]
-        S3[PCA Score Sign: 52.8% ✗<br/>Worse than baseline]
+        S1[CALM_BULL -> UP: 63.3%\nWorse than baseline]
+        S2[CALM_BEAR -> DOWN: 45.1%\nWorse than coin flip]
+        S3[PCA Score Sign: 52.8%\nWorse than baseline]
     end
     MB --> S1
     MB --> S2
@@ -266,12 +266,12 @@ flowchart LR
 flowchart LR
     subgraph "Downside Risk by Regime"
         direction TB
-        W1[CRISIS: -26.5% | Avg: +1.63%]
-        W2[STRESS: -18.2% | Avg: +0.72%]
-        W3[TRANSITION: -17.6% | Avg: +0.49%]
-        W4[CALM_RANGE: -11.6% | Avg: +0.21%]
-        W5[CALM_BEAR: -9.1% | Avg: +0.25%]
-        W6[CALM_BULL: -6.8% | Avg: +0.48%]
+        W1[CRISIS: -26.5% / Avg +1.63%]
+        W2[STRESS: -18.2% / Avg +0.72%]
+        W3[TRANSITION: -17.6% / Avg +0.49%]
+        W4[CALM_RANGE: -11.6% / Avg +0.21%]
+        W5[CALM_BEAR: -9.1% / Avg +0.25%]
+        W6[CALM_BULL: -6.8% / Avg +0.48%]
     end
 ```
 
@@ -310,19 +310,19 @@ pie
 ```mermaid
 flowchart TD
     A[Regime Classifier Assessment] --> B{Volatility Prediction}
-    B --> C[Beats coin flip ✓]
-    B --> D[Loses to VIX ✗]
-    B --> E[Loses to Realized Vol ✗]
+    B --> C[Beats coin flip]
+    B --> D[Loses to VIX]
+    B --> E[Loses to Realized Vol]
     A --> F{Directional Prediction}
-    F --> G[No skill ✗]
-    F --> H[Worse than always guessing UP ✗]
+    F --> G[No skill]
+    F --> H[Worse than always guessing UP]
     A --> I{Risk Detection}
-    I --> J[Catches 81% of big drops ✓]
-    I --> K[High false positive rate 58% ✗]
+    I --> J[Catches 81% of big drops]
+    I --> K[High false positive rate 58%]
     A --> L{Signal Quality}
-    L --> M[VIX dominates ✓]
-    L --> N[Extra signals add noise ✗]
-    L --> O[Entropy ratio weakest ✗]
+    L --> M[VIX dominates]
+    L --> N[Extra signals add noise]
+    L --> O[Entropy ratio weakest]
     
     C --> P[Use case: Educational/Research]
     D --> P
@@ -353,8 +353,8 @@ mindmap
       Trade-off: Recall vs Precision
       Classifier flags too many days
     Signal Quality
-      VIX: AUC 0.828/0.850 ✓
-      Realized Vol: AUC 0.753/0.789 ✓
+      VIX: AUC 0.828/0.850
+      Realized Vol: AUC 0.753/0.789
       Risk Score: No better than RV
       Entropy: Weakest signal
     Big Drops
