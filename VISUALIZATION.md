@@ -14,8 +14,8 @@ This document uses Mermaid diagrams (rendered natively on GitHub) to visualize t
 flowchart LR
     subgraph "Accuracy: Predicting High Volatility (Next 10 Days)"
         direction TB
-        A1[VIX > Median: 74.4%]
-        A2[Realized Vol > Median: 67.7%]
+        A1[VIX above Median: 74.4%]
+        A2[Realized Vol above Median: 67.7%]
         A3[Classifier STRESS/CRISIS: 63.0%]
         A4[Classifier TRANS/STRESS/CRISIS: 60.4%]
         A5[Coin Flip: 50.0%]
@@ -32,10 +32,10 @@ flowchart LR
     subgraph "Classifier: STRESS/CRISIS only"
         D1[Precision: 70.1%] --> D2[Recall: 45.1%] --> D3[Days Flagged: 32.2%]
     end
-    subgraph "Baseline: VIX > Median"
+    subgraph "Baseline: VIX above Median"
         E1[Precision: 74.4%] --> E2[Recall: 74.4%] --> E3[Days Flagged: 50.0%]
     end
-    subgraph "Baseline: Realized Vol > Median"
+    subgraph "Baseline: Realized Vol above Median"
         F1[Precision: 67.7%] --> F2[Recall: 67.7%] --> F3[Days Flagged: 50.0%]
     end
 ```
@@ -44,11 +44,11 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    A[Goal: Predict if next 10 days<br/>more volatile than usual] --> B{Which method?}
+    A[Goal: Predict if next 10 days more volatile than usual] --> B{Which method?}
     B --> C[Classifier TRANS/STRESS/CRISIS]
     B --> D[Classifier STRESS/CRISIS only]
-    B --> E[VIX > Median]
-    B --> F[Realized Vol > Median]
+    B --> E[VIX above Median]
+    B --> F[Realized Vol above Median]
     C --> G[Acc: 60.4%\nPrec: 59.0%\nRec: 68.0%]
     D --> H[Acc: 63.0%\nPrec: 70.1%\nRec: 45.1%]
     E --> I[Acc: 74.4%\nPrec: 74.4%\nRec: 74.4%]
@@ -70,9 +70,9 @@ flowchart LR
     subgraph "Accuracy: Predicting Turbulent Days (Top 25% Volatility)"
         direction TB
         B1[Always Guess No: 75.0%]
-        B2[VIX > Median: 68.3%]
+        B2[VIX above Median: 68.3%]
         B3[Classifier STRESS/CRISIS: 71.8%]
-        B4[Realized Vol > Median: 64.9%]
+        B4[Realized Vol above Median: 64.9%]
         B5[Classifier TRANS/STRESS/CRISIS: 56.5%]
     end
 ```
@@ -96,7 +96,7 @@ flowchart LR
 flowchart LR
     subgraph "High Recall / Low Precision"
         R1[TRANS/STRESS/CRISIS\nRecall: 78.3%\nPrecision: 34.0%\nFlags: 57.6%]
-        R2[VIX > Median\nRecall: 86.6%\nPrecision: 43.3%\nFlags: 50%]
+        R2[VIX above Median\nRecall: 86.6%\nPrecision: 43.3%\nFlags: 50%]
     end
     subgraph "Balanced"
         B1[STRESS/CRISIS only\nRecall: 57.8%\nPrecision: 44.9%\nFlags: 32.2%]
@@ -164,7 +164,7 @@ flowchart TD
 
 ---
 
-## 4. Catching Big Drops (> -5% in 10 Days)
+## 4. Catching Big Drops (more than -5% in 10 Days)
 
 ### Detection Breakdown
 
@@ -198,11 +198,11 @@ flowchart TD
 flowchart LR
     subgraph "Directional Prediction Accuracy"
         direction TB
-        D1[Market always UP (baseline) - 64.8%]
-        D2[CALM_BULL predicts UP - 63.3%]
-        D3[PCA Structure Score - 52.8%]
-        D4[Coin Flip - 50.0%]
-        D5[CALM_BEAR predicts DOWN - 45.1%]
+        D1[Market always UP baseline: 64.8%]
+        D2[CALM_BULL predicts UP: 63.3%]
+        D3[PCA Structure Score: 52.8%]
+        D4[Coin Flip: 50.0%]
+        D5[CALM_BEAR predicts DOWN: 45.1%]
     end
 ```
 
