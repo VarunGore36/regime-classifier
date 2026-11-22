@@ -13,6 +13,19 @@ from regime import CombinedRegimeClassifier, RVZScoreRegimeClassifier, GEXRegime
 from signals import SignalGenerator, POCReversionSignal, VWAPBandSignal, BreakFadeSignal
 from backtest import BacktestEngine, run_walkforward_backtest, bootstrap_backtest, monte_carlo_simulation
 from reports import create_tearsheet, generate_report
+from utils import (
+    ensure_timezone, resample_bars, fill_missing_bars,
+    calculate_session_stats, align_dataframes,
+    calculate_returns, annualize_volatility, sharpe_ratio,
+    sortino_ratio, max_drawdown, calmar_ratio,
+    profit_factor, expectancy, streaks,
+    rolling_metrics, time_weighted_return,
+    information_ratio, beta, alpha
+)
+from validation import (
+    validate_bars, validate_options_chain, validate_footprint,
+    validate_alignment, ValidationResult
+)
 
 __all__ = [
     # Config
@@ -31,4 +44,15 @@ __all__ = [
     "BacktestEngine", "run_walkforward_backtest", "bootstrap_backtest", "monte_carlo_simulation",
     # Reports
     "create_tearsheet", "generate_report",
+    # Utils
+    "ensure_timezone", "resample_bars", "fill_missing_bars",
+    "calculate_session_stats", "align_dataframes",
+    "calculate_returns", "annualize_volatility", "sharpe_ratio",
+    "sortino_ratio", "max_drawdown", "calmar_ratio",
+    "profit_factor", "expectancy", "streaks",
+    "rolling_metrics", "time_weighted_return",
+    "information_ratio", "beta", "alpha",
+    # Validation
+    "validate_bars", "validate_options_chain", "validate_footprint",
+    "validate_alignment", "ValidationResult",
 ]
