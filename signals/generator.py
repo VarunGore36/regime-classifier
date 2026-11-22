@@ -6,10 +6,18 @@ import pandas as pd
 import numpy as np
 
 from config import get_config
-from features import calculate_volume_profile, calculate_vwap, get_profile_levels
-from regime import CombinedRegimeClassifier
+from features import (
+    calculate_volume_profile, calculate_vwap, get_profile_levels,
+    get_entropy_features, calculate_iv_skew, calculate_term_structure,
+    get_skew_signals, calculate_garch_volatility, get_garch_signals,
+    calculate_shadow_gamma, get_shadow_gamma_signals
+)
+from regime import CombinedRegimeClassifier, CompositeAdvancedRegimeClassifier
 from .entries import POCReversionSignal, VWAPBandSignal, BreakFadeSignal, EntrySignal
 from .exits import StopLossExit, TakeProfitExit, TrailingStopExit, TimeExit, RegimeChangeExit, combine_exits, ExitSignal
+from .advanced import (
+    EntropySignalGenerator, IVSkewSignalGenerator, GARCHSignalGenerator, ShadowGammaSignalGenerator
+)
 
 
 @dataclass
@@ -19,6 +27,8 @@ class TradingSignal:
     exit: ExitSignal
     position: pd.Series           # 1=long, -1=short, 0=flat
     equity_curve: pd.Series       # Cumulative P&L
+    regime_result: any            # Regime classification result
+    advanced_signals: dict        # Advanced signal results
 
 
 class SignalGenerator:
@@ -35,6 +45,12 @@ class SignalGenerator:
         self.vwap_signal = VWAPBandSignal(config.get("vwap_bands"))
         self.break_fade_signal = BreakFadeSignal(config.get("break_fade"))
 
+        # Advanced signals
+        self.entropy_signal = EntropySignalGenerator(config.get("entropy_signal"))
+        self.iv_skew_signal = IVSkewSignalGenerator(config.get("iv_skew_signal"))
+        self.garch_signal = GARCHSignalGenerator(config.get("garch_signal"))
+        self.shadow_gamma_signal = ShadowGammaSignalGenerator(config.get("shadow_gamma_signal"))
+
         # Exit signals
         self.stop_loss = StopLossExit(
             stop_ticks=config.get("stop_ticks", 20),
@@ -49,12 +65,13 @@ class SignalGenerator:
             tick_size=0.25
         )
         self.time_exit = TimeExit(
-            exit_hour=cfg.backtest.session_close_hour if hasattr(cfg.backtest, "session_close_hour") else 15,
-            exit_minute=cfg.backtest.session_close_minute if hasattr(cfg.backtest, "session_close_minute") else 55
+            exit_hour=getattr(cfg.backtest, "session_close_hour", 15),
+            exit_minute=getattr(cfg.backtest, "session_close_minute", 55)
         )
 
-        # Regime classifier
+        # Regime classifiers
         self.regime_classifier = CombinedRegimeClassifier()
+        self.advanced_regime_classifier = CompositeAdvancedRegimeClassifier()
 
     def generate(
         self,
@@ -80,53 +97,137 @@ class SignalGenerator:
         vwap_result = calculate_vwap(nq_bars)
         profile_levels = get_profile_levels(vol_profile)
 
-        # 2. Prepare regime data
+        # 2. Advanced features
+        returns = np.log(nq_bars["close"] / nq_bars["close"].shift(1)).dropna()
+        entropy_features = get_entropy_features(returns)
+
+        # 3. Prepare regime data
         regime_data = self._prepare_regime_data(nq_bars, options_chain)
 
-        # 3. Classify regime
+        # 4. Classify regimes
         regime_result = self.regime_classifier.classify(regime_data)
+        advanced_regime_result = self.advanced_regime_classifier.classify(regime_data)
 
-        # 4. Generate entry signals
+        # 5. Generate entry signals (basic)
         poc_entry = self.poc_signal.generate(nq_bars, vol_profile, regime_result)
         vwap_entry = self.vwap_signal.generate(nq_bars, vwap_result, regime_result)
         bf_entry = self.break_fade_signal.generate(nq_bars, footprint, profile_levels, regime_result)
 
-        # 5. Combine entries (priority: POC > VWAP > Break/Fade)
-        combined_entry = self._combine_entries([poc_entry, vwap_entry, bf_entry])
+        # 6. Generate advanced signals
+        entropy_entry = self.entropy_signal.generate(nq_bars, entropy_features, advanced_regime_result)
 
-        # 6. Generate positions from entries
+        iv_skew_entry = IVSkewSignal(
+            long_entry=pd.Series(False, index=nq_bars.index),
+            short_entry=pd.Series(False, index=nq_bars.index),
+            long_price=pd.Series(np.nan, index=nq_bars.index),
+            short_price=pd.Series(np.nan, index=nq_bars.index),
+            stop_loss=pd.Series(np.nan, index=nq_bars.index),
+            take_profit=pd.Series(np.nan, index=nq_bars.index),
+            signal_type=pd.Series("none", index=nq_bars.index),
+            metadata={}
+        )
+        garch_entry = GARCHSignal(
+            long_entry=pd.Series(False, index=nq_bars.index),
+            short_entry=pd.Series(False, index=nq_bars.index),
+            long_price=pd.Series(np.nan, index=nq_bars.index),
+            short_price=pd.Series(np.nan, index=nq_bars.index),
+            stop_loss=pd.Series(np.nan, index=nq_bars.index),
+            take_profit=pd.Series(np.nan, index=nq_bars.index),
+            signal_type=pd.Series("none", index=nq_bars.index),
+            metadata={}
+        )
+        shadow_gamma_entry = ShadowGammaSignal(
+            long_entry=pd.Series(False, index=nq_bars.index),
+            short_entry=pd.Series(False, index=nq_bars.index),
+            long_price=pd.Series(np.nan, index=nq_bars.index),
+            short_price=pd.Series(np.nan, index=nq_bars.index),
+            stop_loss=pd.Series(np.nan, index=nq_bars.index),
+            take_profit=pd.Series(np.nan, index=nq_bars.index),
+            signal_type=pd.Series("none", index=nq_bars.index),
+            metadata={}
+        )
+
+        # Try to generate advanced signals if options data available
+        if len(options_chain) > 0:
+            try:
+                # IV Skew
+                skew_result = calculate_iv_skew(
+                    options_chain, nq_bars.set_index("timestamp")["close"]
+                )
+                term_result = calculate_term_structure(options_chain)
+                skew_signals = get_skew_signals(skew_result, term_result)
+                iv_skew_entry = self.iv_skew_signal.generate(nq_bars, skew_signals, advanced_regime_result)
+
+                # GARCH
+                garch_result = calculate_garch_volatility(returns)
+                garch_signals = get_garch_signals(garch_result, returns)
+                garch_entry = self.garch_signal.generate(nq_bars, garch_signals, advanced_regime_result)
+
+                # Shadow Gamma
+                shadow_result = calculate_shadow_gamma(options_chain, nq_bars.set_index("timestamp")["close"])
+                shadow_signals = get_shadow_gamma_signals(shadow_result)
+                shadow_gamma_entry = self.shadow_gamma_signal.generate(nq_bars, shadow_signals, advanced_regime_result)
+            except Exception as e:
+                print(f"Advanced signals error: {e}")
+
+        # 7. Combine all entries (priority order)
+        all_entries = [
+            poc_entry,      # Highest priority
+            vwap_entry,
+            bf_entry,
+            entropy_entry,
+            iv_skew_entry,
+            garch_entry,
+            shadow_gamma_entry
+        ]
+        combined_entry = self._combine_entries(all_entries)
+
+        # 8. Generate positions from entries
         position = self._entries_to_position(nq_bars, combined_entry)
 
-        # 7. Generate exit signals
+        # 9. Generate exit signals
+        entry_price = combined_entry.long_price.where(
+            combined_entry.long_entry,
+            combined_entry.short_price.where(combined_entry.short_entry)
+        )
         exits = []
-        exits.append(self.stop_loss.generate(nq_bars, combined_entry.long_price.where(combined_entry.long_entry, combined_entry.short_price.where(combined_entry.short_entry)), position))
-        exits.append(self.take_profit.generate(nq_bars, combined_entry.long_price.where(combined_entry.long_entry, combined_entry.short_price.where(combined_entry.short_entry)), position))
-        exits.append(self.trailing_stop.generate(nq_bars, combined_entry.long_price.where(combined_entry.long_entry, combined_entry.short_price.where(combined_entry.short_entry)), position))
+        exits.append(self.stop_loss.generate(nq_bars, entry_price, position))
+        exits.append(self.take_profit.generate(nq_bars, entry_price, position))
+        exits.append(self.trailing_stop.generate(nq_bars, entry_price, position))
         exits.append(self.time_exit.generate(nq_bars, position))
         exits.append(RegimeChangeExit(self.regime_classifier).generate(nq_bars, position, regime_result))
 
         combined_exit = combine_exits(*exits)
 
-        # 8. Apply exits to position
+        # 10. Apply exits to position
         final_position = self._apply_exits(position, combined_exit)
 
-        # 9. Calculate equity curve
+        # 11. Calculate equity curve
         equity = self._calculate_equity(nq_bars, final_position, combined_entry, combined_exit)
+
+        # 12. Advanced signals dict
+        advanced_signals = {
+            "entropy": entropy_entry,
+            "iv_skew": iv_skew_entry,
+            "garch": garch_entry,
+            "shadow_gamma": shadow_gamma_entry
+        }
 
         return TradingSignal(
             entry=combined_entry,
             exit=combined_exit,
             position=final_position,
-            equity_curve=equity
+            equity_curve=equity,
+            regime_result=regime_result,
+            advanced_signals=advanced_signals
         )
 
     def _prepare_regime_data(self, nq_bars: pd.DataFrame, options_chain: pd.DataFrame) -> pd.DataFrame:
         """Prepare data for regime classification."""
         df = nq_bars[["timestamp", "close"]].copy()
 
-        # Add GEX/DEX from options chain (simplified - would need proper aggregation)
+        # Add GEX/DEX from options chain
         if len(options_chain) > 0:
-            # Get GEX/DEX per timestamp from options
             gex_by_time = options_chain.groupby("timestamp").apply(
                 lambda x: (x["oi"] * x["gamma"] * 100 * x["underlying_price"]).sum()
             ).rename("gex_net")
@@ -141,9 +242,12 @@ class SignalGenerator:
 
             df = df.set_index("timestamp").join([gex_by_time, dex_by_time, gamma_flip]).reset_index()
 
-        # Add IV/RV if available
-        df["iv"] = np.nan  # Would come from IV features
-        df["rv"] = np.nan  # Would come from RV features
+        # Add IV/RV placeholder
+        df["iv"] = np.nan
+        df["rv"] = np.nan
+
+        # Add options_chain for advanced classifiers
+        df["options_chain"] = [options_chain] * len(df) if len(options_chain) > 0 else None
 
         return df
 
@@ -152,7 +256,6 @@ class SignalGenerator:
         if not entries:
             return entries[0] if entries else None
 
-        # Use first entry as base
         base = entries[0]
         n = len(base.long_entry)
 
@@ -165,7 +268,6 @@ class SignalGenerator:
         combined_type = base.signal_type.copy()
 
         for entry in entries[1:]:
-            # Only add signals where no signal exists yet
             long_mask = entry.long_entry & ~combined_long
             short_mask = entry.short_entry & ~combined_short
 
@@ -202,7 +304,6 @@ class SignalGenerator:
                 prev_pos = position.iloc[i-1]
 
             if prev_pos == 0:
-                # Flat - check for new entry
                 if entry.long_entry.iloc[i]:
                     position.iloc[i] = 1
                 elif entry.short_entry.iloc[i]:
@@ -210,7 +311,6 @@ class SignalGenerator:
                 else:
                     position.iloc[i] = 0
             else:
-                # In position - hold until exit (handled separately)
                 position.iloc[i] = prev_pos
 
         return position
@@ -246,7 +346,6 @@ class SignalGenerator:
         slippage = cfg.backtest.slippage_ticks * 0.25
 
         equity = pd.Series(0.0, index=bars.index)
-        pnl = pd.Series(0.0, index=bars.index)
 
         in_position = False
         entry_price = 0
@@ -261,7 +360,6 @@ class SignalGenerator:
             curr_position = position.iloc[i]
             prev_position = position.iloc[i-1]
 
-            # Entry
             if prev_position == 0 and curr_position != 0:
                 in_position = True
                 position_side = curr_position
@@ -269,12 +367,8 @@ class SignalGenerator:
                     entry_price = bars["close"].iloc[i] + slippage
                 else:
                     entry_price = bars["close"].iloc[i] - slippage
+                prev_equity -= commission
 
-                # Commission
-                trade_cost = commission
-                prev_equity -= trade_cost
-
-            # Exit
             elif prev_position != 0 and curr_position == 0:
                 in_position = False
                 if position_side == 1:
@@ -283,16 +377,10 @@ class SignalGenerator:
                 else:
                     exit_price = bars["close"].iloc[i] + slippage
                     trade_pnl = (entry_price - exit_price) * contract_multiplier
-
-                # Commission
-                trade_cost = commission
-                trade_pnl -= trade_cost
-
+                trade_pnl -= commission
                 prev_equity += trade_pnl
-                pnl.iloc[i] = trade_pnl
                 position_side = 0
 
-            # Mark-to-market (unrealized P&L)
             if in_position:
                 if position_side == 1:
                     unrealized = (bars["close"].iloc[i] - entry_price) * contract_multiplier
