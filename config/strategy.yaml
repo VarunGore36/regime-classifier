@@ -1,0 +1,142 @@
+# Strategy Configuration
+# All thresholds and parameters - no magic numbers in code
+
+# Data settings
+data:
+  nq_symbol: "NQ"
+  qqq_symbol: "QQQ"
+  timezone: "America/New_York"
+  session_open: "09:30"
+  session_close: "16:00"
+  eth_start: "02:00"  # Extended hours start (UAE 2am = NY 5pm prev day)
+  volume_profile_start: "02:00"  # Start VP from 2am UAE
+
+# Volume Profile
+volume_profile:
+  va_percentile: 0.70  # Value Area = 70% of volume
+  min_tpo_count: 10
+  hvn_threshold: 1.5   # HVN = 1.5x average volume per price
+  lvn_threshold: 0.3   # LVN = 0.3x average volume per price
+
+# VWAP
+vwap:
+  bands: [1.0, 2.0, 3.0]  # Standard deviation bands
+  anchor_session_open: true
+  reset_on_session: true
+
+# Realized Volatility
+realized_vol:
+  window_minutes: 30
+  zscore_windows: [20, 60, 240]  # Rolling windows for Z-score
+  elevated_threshold: 1.0
+  very_elevated_threshold: 2.0
+
+# Implied Volatility
+implied_vol:
+  dte_column: "dte"
+  iv_column: "iv"
+  expected_move_confidence: 0.68  # 1 std dev
+
+# Black-Scholes
+black_scholes:
+  risk_free_rate: 0.05
+  dividend_yield: 0.0
+  model: "black_scholes"  # or "black76" for futures options
+
+# NQ/QQQ Conversion
+conversion:
+  reference_price: "gamma_wall"  # or "oi_strike", "poc", "vah", "val"
+
+# GEX/DEX/CHEX
+greeks:
+  gex_positive_threshold: 0
+  dex_positive_threshold: 0
+  chex_lookback_hours: 1
+  gamma_flip_column: "gamma_flip"
+  call_wall_column: "call_wall"
+  put_wall_column: "put_wall"
+
+# Regime Classification
+regime:
+  entropy_model: "shannon"  # placeholder
+  rv_zscore_threshold: 0.0
+  gex_sign_threshold: 0
+  min_confidence: 0.6
+
+# Signals
+signals:
+  # POC Reversion
+  poc_reversion:
+    enabled: true
+    lookback_bars: 20
+    entry_offset_ticks: 5
+    stop_ticks: 20
+    target_ticks: 40
+
+  # VWAP Bands
+  vwap_bands:
+    enabled: true
+    band: 3.0  # 3rd deviation
+    session_open_only: true
+    entry_offset_ticks: 3
+    stop_ticks: 15
+    target_ticks: 30
+
+  # Break vs Fade
+  break_trades:
+    enabled: true
+    volume_surge_mult: 2.0
+    delta_threshold: 100
+    stop_ticks: 15
+    target_ticks: 45
+
+  fade_trades:
+    enabled: false  # Paper shows breaks > fades
+    volume_surge_mult: 1.5
+    delta_threshold: 50
+    stop_ticks: 10
+    target_ticks: 20
+
+# Order Flow
+orderflow:
+  absorption:
+    min_delta_divergence: 50
+    max_price_move_ticks: 5
+    min_volume: 100
+
+  exhaustion:
+    delta_reversal_threshold: 100
+    volume_dryup_mult: 0.3
+    max_bars: 3
+
+  trapped_traders:
+    imbalance_ratio: 3.0
+    confirmation_bars: 2
+
+# Backtest
+backtest:
+  initial_capital: 100000
+  commission_per_contract: 2.50
+  slippage_ticks: 1
+  contract_multiplier: 20  # NQ = $20/point
+  max_positions: 1
+  position_sizing: "fixed"  # or "kelly", "vol_target"
+  risk_per_trade_pct: 0.01
+
+# Walk-Forward
+walkforward:
+  train_months: 6
+  test_months: 1
+  step_months: 1
+  min_trades: 30
+
+# Bootstrap
+bootstrap:
+  n_paths: 1000
+  confidence_level: 0.95
+
+# Reporting
+reporting:
+  benchmark: "buy_hold"
+  risk_free_rate: 0.02
+  periods_per_year: 252 * 390  # minutes in trading year
